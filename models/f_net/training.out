@@ -1,0 +1,35 @@
+nohup: ignoring input
+cuda
+Using downloaded and verified file: ./data/SVHN/extra_32x32.mat
+>>> Epoch 0, train: loss 0.9028 acc 0.7115, test: loss 0.3971 acc 0.8864, 
+>>> Epoch 1, train: loss 0.3221 acc 0.9090, test: loss 0.2571 acc 0.9265, 
+>>> Epoch 2, train: loss 0.2373 acc 0.9332, test: loss 0.2033 acc 0.9424, 
+>>> Epoch 3, train: loss 0.1932 acc 0.9456, test: loss 0.1733 acc 0.9508, 
+>>> Epoch 4, train: loss 0.1648 acc 0.9540, test: loss 0.1541 acc 0.9565, 
+>>> Epoch 5, train: loss 0.1444 acc 0.9600, test: loss 0.1383 acc 0.9611, 
+>>> Epoch 6, train: loss 0.1290 acc 0.9645, test: loss 0.1258 acc 0.9649, 
+>>> Epoch 7, train: loss 0.1170 acc 0.9681, test: loss 0.1159 acc 0.9678, 
+>>> Epoch 8, train: loss 0.1073 acc 0.9709, test: loss 0.1092 acc 0.9699, 
+>>> Epoch 9, train: loss 0.0992 acc 0.9733, test: loss 0.1042 acc 0.9716, 
+>>> Epoch 10, train: loss 0.0922 acc 0.9754, test: loss 0.1001 acc 0.9725, 
+>>> Epoch 11, train: loss 0.0862 acc 0.9771, test: loss 0.0975 acc 0.9730, 
+>>> Epoch 12, train: loss 0.0807 acc 0.9787, test: loss 0.0947 acc 0.9740, 
+>>> Epoch 13, train: loss 0.0758 acc 0.9802, test: loss 0.0919 acc 0.9747, 
+>>> Epoch 14, train: loss 0.0714 acc 0.9816, test: loss 0.0891 acc 0.9756, 
+>>> Epoch 15, train: loss 0.0674 acc 0.9829, test: loss 0.0874 acc 0.9763, 
+>>> Epoch 16, train: loss 0.0636 acc 0.9840, test: loss 0.0859 acc 0.9769, 
+>>> Epoch 17, train: loss 0.0602 acc 0.9849, test: loss 0.0861 acc 0.9772, 
+>>> Epoch 18, train: loss 0.0570 acc 0.9859, test: loss 0.0866 acc 0.9771, 
+>>> Epoch 19, train: loss 0.0540 acc 0.9868, test: loss 0.0875 acc 0.9770, 
+>>> Epoch 20, train: loss 0.0511 acc 0.9876, test: loss 0.0899 acc 0.9770, 
+>>> Epoch 21, train: loss 0.0483 acc 0.9883, test: loss 0.0907 acc 0.9769, 
+>>> Epoch 22, train: loss 0.0458 acc 0.9891, test: loss 0.0914 acc 0.9770, 
+>>> Epoch 23, train: loss 0.0433 acc 0.9898, test: loss 0.0929 acc 0.9767, 
+>>> Epoch 24, train: loss 0.0408 acc 0.9905, test: loss 0.0936 acc 0.9767, 
+>>> Epoch 25, train: loss 0.0384 acc 0.9912, test: loss 0.0957 acc 0.9768, 
+>>> Epoch 26, train: loss 0.0361 acc 0.9918, test: loss 0.0973 acc 0.9768, 
+>>> Epoch 27, train: loss 0.0339 acc 0.9925, test: loss 0.1000 acc 0.9766, 
+Test accuracy has not improved in 11 epochs, stop train
+Best model test accuracy: 0.9771995544433594, train accuracy: 0.9849461913108826
+>>> model saved to ./models/f_net
+QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-eladb3'
