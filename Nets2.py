@@ -10,33 +10,48 @@ import utils
 from collections import OrderedDict
 
 
-
 def init_weights(m):
     try:
         torch.nn.init.xavier_uniform_(m.weight)
         m.bias.data.fill_(0.01)
     except:
         pass
-
-
+    
 
 
 ## g net
 g_in_dim = (128)
 g_out_dim = (3, 32, 32)
 
+# g_net = nn.Sequential(
+#     utils.nn_Reshape(128, 1, 1),
+#     nn.ConvTranspose2d(128, 512, kernel_size = 4, stride = 2, padding = 0),
+#     nn.BatchNorm2d(512),
+#     nn.ReLU(),
+#     nn.ConvTranspose2d(512, 256, kernel_size = 4, stride = 2, padding = 1),
+#     nn.BatchNorm2d(256),
+#     nn.ReLU(),
+#     nn.ConvTranspose2d(256, 128, kernel_size = 4, stride = 2, padding = 1),
+#     nn.BatchNorm2d(128),
+#     nn.ReLU(),
+#     nn.ConvTranspose2d(128, 1, kernel_size = 4, stride = 2, padding = 1),
+#     nn.Tanh(),
+#     utils.nn_GrayScaleToRGB()
+# )
+
+
 g_net = nn.Sequential(
-    utils.nn_Reshape(128, 1, 1),
-    nn.ConvTranspose2d(128, 512, kernel_size = 4, stride = 2, padding = 0),
-    nn.BatchNorm2d(512),
+    utils.nn_Reshape(32, 2, 2),
+    nn.ConvTranspose2d(32, 16, kernel_size = 2, stride = 2, padding = 0),
+    nn.BatchNorm2d(16),
     nn.ReLU(),
-    nn.ConvTranspose2d(512, 256, kernel_size = 4, stride = 2, padding = 1),
-    nn.BatchNorm2d(256),
+    nn.ConvTranspose2d(16, 8, kernel_size = 2, stride = 2, padding = 0),
+    nn.BatchNorm2d(8),
     nn.ReLU(),
-    nn.ConvTranspose2d(256, 128, kernel_size = 4, stride = 2, padding = 1),
-    nn.BatchNorm2d(128),
+    nn.ConvTranspose2d(8, 4, kernel_size = 2, stride = 2, padding = 0),
+    nn.BatchNorm2d(4),
     nn.ReLU(),
-    nn.ConvTranspose2d(128, 1, kernel_size = 4, stride = 2, padding = 1),
+    nn.ConvTranspose2d(4, 1, kernel_size = 2, stride = 2, padding = 0),
     nn.Tanh(),
     utils.nn_Tanh_to_Img(),
     utils.nn_GrayScaleToRGB()
@@ -44,21 +59,8 @@ g_net = nn.Sequential(
 
 g_net.apply(init_weights)
 
-# g_net = nn.Sequential(
-#     utils.nn_Reshape(32, 2, 2),
-#     nn.ConvTranspose2d(32, 16, kernel_size = 2, stride = 2, padding = 0),
-#     nn.BatchNorm2d(16),
-#     nn.ReLU(),
-#     nn.ConvTranspose2d(16, 8, kernel_size = 2, stride = 2, padding = 0),
-#     nn.BatchNorm2d(8),
-#     nn.ReLU(),
-#     nn.ConvTranspose2d(8, 4, kernel_size = 2, stride = 2, padding = 0),
-#     nn.BatchNorm2d(4),
-#     nn.ReLU(),
-#     nn.ConvTranspose2d(4, 1, kernel_size = 2, stride = 2, padding = 0),
-#     nn.Tanh(),
-#     utils.nn_GrayScaleToRGB()
-# )
+
+
 f_net = torch.load("./models/f_net/model")
 f_net_features = f_net._modules['0']
 
@@ -84,10 +86,12 @@ D_net = nn.Sequential(
     nn.Conv2d(256, 512, kernel_size = 3, stride = 2, padding = 1),
     nn.BatchNorm2d(512),
     nn.ReLU(),
-    nn.Conv2d(512, 3, kernel_size = 4, stride = 2, padding = 0),
+    nn.Conv2d(512, 2, kernel_size = 4, stride = 2, padding = 0),
     nn.Flatten(),
 #     nn.Softmax(dim = 1)
 )
+
+
 D_net.apply(init_weights)
 
 ## Older

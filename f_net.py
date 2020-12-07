@@ -34,20 +34,43 @@ class nn_Print(nn.Module):
 f_in_dim = (3, 32,32)
 f_out_dim = (128)
 
+# f_net_features = nn.Sequential(
+#     utils.nn_GrayScaleToRGB(),
+#     nn.Conv2d(3, 64, kernel_size = 3, stride = 1, padding = 1),
+#     nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1),
+#     nn.ReLU(),
+#     nn.Conv2d(64, 128, kernel_size = 3, stride = 1, padding = 1),
+#     nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1),
+#     nn.ReLU(),
+#     nn.Conv2d(128, 256, kernel_size = 3, stride = 1, padding = 1),
+#     nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1),
+#     nn.ReLU(),
+#     nn.Conv2d(256, 128, kernel_size = 3, stride = 1, padding = 1),
+#     nn.MaxPool2d(kernel_size = 4, stride = 1, padding = 0),
+#     nn.ReLU(),
+#     nn.Flatten()
+# )
+
 f_net_features = nn.Sequential(
     utils.nn_GrayScaleToRGB(),
-    nn.Conv2d(3, 64, kernel_size = 3, stride = 1, padding = 1),
-    nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1),
+    # (3, 32, 32)
+    nn.Conv2d(3, 64, kernel_size = 3, stride = 2, padding = 1),
+    # (64, 16, 16)
     nn.ReLU(),
-    nn.Conv2d(64, 128, kernel_size = 3, stride = 1, padding = 1),
-    nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1),
+    nn.BatchNorm2d(64),
+    nn.Conv2d(64, 128, kernel_size = 3, stride = 2, padding = 1),
+    # (64, 8, 8)
     nn.ReLU(),
-    nn.Conv2d(128, 256, kernel_size = 3, stride = 1, padding = 1),
-    nn.MaxPool2d(kernel_size = 3, stride = 2, padding = 1),
+    nn.BatchNorm2d(128),
+    nn.Conv2d(128, 256, kernel_size = 3, stride = 2, padding = 1),
+    # (64, 4, 4)
     nn.ReLU(),
-    nn.Conv2d(256, 128, kernel_size = 3, stride = 1, padding = 1),
-    nn.MaxPool2d(kernel_size = 4, stride = 1, padding = 0),
+    nn.BatchNorm2d(256),
+    nn.Conv2d(256, 128, kernel_size = 4, stride = 1, padding = 0),
+    # (64, 4, 4)
     nn.ReLU(),
+    nn.BatchNorm2d(128),
+    nn.Tanh(),
     nn.Flatten()
 )
 
@@ -66,7 +89,7 @@ f_net = nn.Sequential(
 if __name__ == "__main__":
     batch_size = 256
     Epochs = 1000
-    early_stop = 10
+    early_stop = 50
     
     t = transforms.Compose([
         transforms.ToTensor()
@@ -77,5 +100,5 @@ if __name__ == "__main__":
     dl_train, dl_test = DataLoader(train_data, batch_size = batch_size), DataLoader(validation_data, batch_size = batch_size)
     
     ## training
-    utils.train_Net(f_net, Epochs, dl_train, dl_test, path = "./models/f_net", add_softmax = False, print_each = 1, early_stop = 10)
+    utils.train_Net(f_net, Epochs, dl_train, dl_test, path = "./models/f_net", add_softmax = False, print_each = 1, early_stop = early_stop)
         

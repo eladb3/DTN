@@ -35,26 +35,36 @@ def rmdir_if_empty(path):
 def get_grad_norm(opt):
     return sum([w.grad.norm().cpu().item() for w in opt.param_groups[0]['params']])
 
-def plt_losses_norm(l_loss, l_norm):
+def plt_losses_norm(l_loss, l_norm, start_from = 0):
     
     cs = list(l_loss.keys())
     i = 1
+    start = start_from
+    if len(l_loss[list(l_loss.keys())[0]]) < start_from + 1: start = 0
     for c in cs:
         plt.subplot(len(cs), 2, i)
         plt.title(f"{c} Loss")
-        plt.plot(l_loss[c])
+        plt.plot(l_loss[c][start:])
         i += 1
         plt.subplot(len(cs),2,i)
         plt.title(f"{c} Norm")
-        plt.plot(l_norm[c])
+        plt.plot(l_norm[c][start:])
         i += 1
+
+def plt_row_images(y):
+    n = y.size(0)
+    for i in range(n):
+        plt.subplot(1,n,i+1)
+        img = y[i, :, :, :].cpu()
+        plt_tensor(img)
 
     
 ## data
 
 def get_svhn(batch_size, split = "train"):
     t = transforms.Compose([
-        transforms.ToTensor()
+        transforms.ToTensor(),
+#         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
     d = torchvision.datasets.SVHN(root="./data/SVHN", split = split, download = True, transform = t)
@@ -63,7 +73,8 @@ def get_svhn(batch_size, split = "train"):
 def get_mnist(batch_size, split = "train"):
     t = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Resize(32)
+        transforms.Resize(32),
+#         transforms.Normalize((0.5,), (0.5,))
     ])
     train = split == "train"
     d = torchvision.datasets.MNIST(root="./data/MNIST", train = train, download = True, transform = t)
@@ -102,6 +113,35 @@ class nn_GrayScaleToRGB(nn.Module):
     def forward(self, x):
         if x.size(1) == 1:
             x = x.expand(x.size(0), 3, x.size(2), x.size(3))
+        return x
+    
+class nn_Tanh_to_Img(nn.Module):
+    def __init__(self):
+        super(nn_Tanh_to_Img, self).__init__()
+    
+    def forward(self, x):
+        x = (x+1)/2
+        return x
+    
+    
+def GrayScaleToRGB(x):
+    if x.size(1) == 1:
+        x = x.expand(x.size(0), 3, x.size(2), x.size(3))
+    return x
+
+class nn_Cut(nn.Module):
+    def __init__(self, C = None, H = None, W = None):
+        super(nn_Cut, self).__init__()
+        self.C = C
+        self.H = H
+        self.W = W
+    def forward(self, x):
+        if self.C:
+            x = x[:, :self.C, :, :]
+        if self.H:
+            x = x[:,:, :self.H, :]
+        if self.W:
+            x = x[:, :, :, :self.W]
         return x
 
 
