@@ -21,6 +21,7 @@ print(device, flush = True)
 ## plt
 
 def plt_tensor(x):
+    x = (x+1)*0.5
     plt.imshow(TF.to_pil_image(x))
     
 def get_local_time():
@@ -64,6 +65,7 @@ def plt_row_images(y):
 def get_svhn(batch_size, split = "train"):
     t = transforms.Compose([
         transforms.ToTensor(),
+        transforms.Lambda(lambda x: x * 2 - 1),
 #         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
@@ -74,6 +76,7 @@ def get_mnist(batch_size, split = "train"):
     t = transforms.Compose([
         transforms.ToTensor(),
         transforms.Resize(32),
+        transforms.Lambda(lambda x: x * 2 - 1),
 #         transforms.Normalize((0.5,), (0.5,))
     ])
     train = split == "train"

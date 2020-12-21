@@ -16,10 +16,15 @@ import os
 import pickle
 device = torch.device('cuda')
 
+bce_loss = nn.BCELoss()
 mse_loss = nn.MSELoss(reduction = 'mean')
 def dist(x,y):
     return mse_loss(x,y)
 
+def get_rand_noise(n):
+    r = torch.randn((n,)).abs() * 0.08
+    r[r>0.3] = 0.3
+    return r
 
 def get_loss(n, x, f, g, D, weight):
     """
@@ -27,9 +32,16 @@ def get_loss(n, x, f, g, D, weight):
     """
     
     if n == 'L_GANG':
-        xcatD = D(torch.cat([g(f(x['s'])), g(f(x['t']))], dim = 0))
-        ycat = torch.ones((xcatD.size(0), )).type(torch.long).to(device)
-        loss = F.cross_entropy(xcatD, ycat) * weight
+        loss = 0
+        for k in x:
+            xc = g(f(x[k]))
+            xD = D(xc)
+            y = torch.ones((xD.size(0), )).to(device)
+            loss += bce_loss(xD.view(-1), y) * weight
+
+#         xcatD = D(torch.cat([g(f(x['s'])), g(f(x['t']))], dim = 0))
+#         ycat = torch.ones((xcatD.size(0), )).type(torch.float).to(device)
+#         loss = bce_loss(xcatD.view(-1), ycat) * weight
 
     elif n == 'L_TID':
         n1 = x['t'] #torch.zeros_like(x['t']).type(torch.float32).to(device)
@@ -43,16 +55,28 @@ def get_loss(n, x, f, g, D, weight):
 
     elif n == 'L_D':
         xt_rgb =utils.GrayScaleToRGB(x['t'])
-        xG = g(f(torch.cat([x['s'], xt_rgb], dim = 0)))
-        xcat = torch.cat([xG, xt_rgb]) #[G(x_s), G(x_t), x_t]
-        ycat = torch.cat([torch.ones(len(d)) * i for i, d in [(0, x['s']), (0, x['t']), (1,x['t'])]],dim = 0).type(torch.long).to(device)
-        xcatD = D(xcat)
-        loss = F.cross_entropy(xcatD, ycat) * weight
-        probs = F.softmax(xcatD.detach(), dim = 1)
         p = {}
-        p['trans'] = probs[:len(x['s']), 1].mean()
-        p['real_trans'] = probs[len(x['s']) : len(x['s']) + len(x['t']), 1].mean()
-        p['real'] = probs[len(x['s']) + len(x['t']):, 1].mean()        
+        loss = 0
+        for name, cx in (('trans', x['s']), ('real_trans', xt_rgb)):
+            xG = g(f(cx))
+            y = torch.zeros(cx.size(0)).type(torch.float).to(device) + get_rand_noise(cx.size(0)).to(device)
+            xD = D(xG)
+            loss += bce_loss(xD.view(-1), y) * weight
+            p[name] = xD.detach().mean().cpu()
+        xD = D(xt_rgb)
+        y = torch.ones(xt_rgb.size(0)).type(torch.float).to(device) - get_rand_noise(cx.size(0)).to(device)
+        loss += bce_loss(xD.view(-1), y) * weight
+        p['real'] = xD.detach().mean().cpu()
+
+#         xG = g(f(torch.cat([x['s'], xt_rgb], dim = 0)))
+#         xcat = torch.cat([xG, xt_rgb]) #[G(x_s), G(x_t), x_t]
+#         ycat = torch.cat([torch.ones(len(d)) * i for i, d in [(0, x['s']), (0, x['t']), (1,x['t'])]],dim = 0).type(torch.float).to(device)
+#         xcatD = D(xcat)
+#         loss = bce_loss(xcatD.view(-1), ycat) * weight
+#         probs = xcatD.detach()
+#         p['trans'] = probs[:len(x['s'])].mean()
+#         p['real_trans'] = probs[len(x['s']) : len(x['s']) + len(x['t'])].mean()
+#         p['real'] = probs[len(x['s']) + len(x['t']):].mean()        
         loss = (loss, p)
 
     else:
@@ -69,14 +93,21 @@ def get_next_batch(x, iters):
     return True
 
 def train(batch_size, Epochs = float("Inf"), 
-          L_TID_times = 5, weights = {"L_TID":15, "L_CONST":15},
-          save = True, cont = False, plt_ = True , hours = float("Inf"), lr = 0.0003):
+          L_times = {},
+          weights = {"L_TID":15, "L_CONST":15},
+          save = True, cont = False, plt_ = True , hours = float("Inf"), lr = 0.0003, show = False):
     base = f"./models/trainings/{utils.get_local_time()}"
     params = locals()
     os.mkdir(base)
     with open(f"{base}/params.txt", 'wt') as f: f.write(str(params))
     with open(f"{base}/params_dict", 'wb') as f: pickle.dump(params, f)
     hours = hours * (60 * 60) # sec in hour
+    
+    for k in L_times.keys():
+        if isinstance(k, int):
+            L_times[k] = lambda x: L_times[k]
+            
+    
     if cont:
         g = torch.load(f"{cont}/g_net")
         D = torch.load(f"{cont}/D_net")
@@ -85,16 +116,14 @@ def train(batch_size, Epochs = float("Inf"),
         D = Nets.D_net
     g, D = g.to(device), D.to(device)
     f = Nets.f_net_features.to(device)
-    opt_g = optim.Adam(g.parameters(), lr=  lr)
-    opt_D = optim.Adam(D.parameters(), lr=  lr)
+    opt_g = optim.Adam(g.parameters(), lr=  lr, betas=(0.5, 0.999))
+    opt_D = optim.Adam(D.parameters(), lr=  lr, betas=(0.5, 0.999))
     
     opts = {'g':opt_g, 'D':opt_D}
     dl = {'s':utils.get_svhn(batch_size) , 't':utils.get_mnist(batch_size)}
     dl_test = utils.get_svhn(32, "test")
     dl_test_mnist = utils.get_mnist(32, "test")
     
-#     for param in Nets.f_net.parameters():
-#         param.requires_grad = False 
     names = ['L_GANG', 'L_CONST', 'L_D', 'L_TID']
     prob_types = ['trans', 'real_trans', 'real']
     cum_norm, cum_loss, n = {c:0 for c in names}, {c:[] for c in names}, {c:0 for c in names}
@@ -109,13 +138,13 @@ def train(batch_size, Epochs = float("Inf"),
             x = x[:4, :, :, :]
             utils.plt_row_images(x.cpu())
             if path: plt.savefig(f"{path}/svhn.jpg")
-            plt.show()
+            if show: plt.show()
             plt.figure(figsize = (15, 10))
             x = x.to(device)
             y = g(f(x))
             utils.plt_row_images(y.cpu())
             if path: plt.savefig(f"{path}/svhn_G.jpg")
-            plt.show()
+            if show: plt.show()
 
             print(f" >>>> Epoch {e} - Mnist")
             plt.figure(figsize = (15, 10))
@@ -123,30 +152,33 @@ def train(batch_size, Epochs = float("Inf"),
             x = x[:4, :, :, :]
             utils.plt_row_images(x.cpu())
             if path: plt.savefig(f"{path}/mnist.jpg")
-            plt.show()
+            if show: plt.show()
             plt.figure(figsize = (15, 10))
             x = x.to(device)
             with torch.no_grad():
                 y = g(f(x))
             utils.plt_row_images(y.cpu())
             if path: plt.savefig(f"{path}/mnist_G.jpg")
-            plt.show()
+            if show: plt.show()
             
             plt.figure(figsize = (15, 10))
             for i, name in enumerate(names):
                 plt.subplot(2,2,i+1)
                 plt.title(name)
-                plt.plot(cum_loss[name])
+                cp = cum_loss[name]
+                if len(cp) > 200: cp = cp[50:]
+                plt.plot(cp)
             if path: plt.savefig(f"{path}/loss.jpg")
-            plt.show()
+            if show: plt.show()
             
             plt.figure(figsize = (15, 10))
             for typ in prob_types:
-                plt.plot(cum_prob[typ], label = typ)
+                cp = cum_prob[typ]
+                plt.plot(cp, label = typ)
             plt.legend()
             plt.title("Disc Probs")
             if path: plt.savefig(f"{path}/probs.jpg")
-            plt.show()
+            if show: plt.show()
             g.train() ; D.train()
 
     
@@ -185,10 +217,10 @@ def train(batch_size, Epochs = float("Inf"),
         while get_next_batch(x, iters):
             for k in x: x[k] = x[k].to(device)
             
-            tr_step('L_D', x)
-            tr_step('L_GANG', x, times = 5)
-            tr_step('L_CONST', x, times = 0 if i % 10 else 1)
-            tr_step('L_TID', x, times = L_TID_times)
+            tr_step('L_D', x, times = L_times.get("L_D", lambda x: 1)(i))
+            tr_step('L_GANG', x, times = L_times.get("L_GANG", lambda x: 1)(i))
+            tr_step('L_CONST', x, times = L_times.get("L_CONST", lambda x: 0 if x % 10 else 1)(i))
+            tr_step('L_TID', x, times = L_times.get("L_TID", lambda x: 1)(i))
 
             i += 1
             if i % 500 == 0 and i > 1:
